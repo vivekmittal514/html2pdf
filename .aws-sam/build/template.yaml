@@ -7,10 +7,10 @@ Description: 'htmltopdf
   '
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 60
     MemorySize: 128
 Resources:
-  SourceS3Bucket:
+  MyS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
@@ -26,19 +26,6 @@ Resources:
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
-  DestinationS3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: Private
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-        - ServerSideEncryptionByDefault:
-            SSEAlgorithm: AES256
   wkhtmltopdfLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -48,14 +35,12 @@ Resources:
       CompatibleRuntimes:
       - python3.9
       - python3.10
-      - python3.11
-      - python3.12
   HtmlToPdfFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: HtmlToPdfFunction
       Handler: app.lambda_handler
-      Runtime: python3.12
+      Runtime: python3.9
       Architectures:
       - x86_64
       Layers:
@@ -63,10 +48,7 @@ Resources:
       Policies:
       - S3CrudPolicy:
           BucketName:
-            Ref: DestinationS3Bucket
-      - S3CrudPolicy:
-          BucketName:
-            Ref: SourceS3Bucket
+            Ref: MyS3Bucket
       Environment:
         Variables:
           FONTCONFIG_PATH: /opt/fonts
@@ -79,3 +61,7 @@ Outputs:
       Fn::GetAtt:
       - HtmlToPdfFunction
       - Arn
+  MyS3BucketName:
+    Description: S3 Bucket Name
+    Value:
+      Ref: MyS3Bucket

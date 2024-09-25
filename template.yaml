@@ -8,13 +8,13 @@ Description: >
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 60
     MemorySize: 128
 
 Resources:
 
 #Add Source S3 bucket
-  SourceS3Bucket:
+  MyS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
@@ -31,21 +31,6 @@ Resources:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
 
-  #Add Destination S3 bucket
-  DestinationS3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: Private
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-
 #Create a lambda layer for wkhtmltopdf. The package is given as a zip format in layers folder in root directory.
   wkhtmltopdfLayer:
     Type: AWS::Serverless::LayerVersion
@@ -56,15 +41,13 @@ Resources:
       CompatibleRuntimes:
         - python3.9
         - python3.10
-        - python3.11
-        - python3.12
 
   HtmlToPdfFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    Type: AWS::Serverless::Function 
     Properties:
       CodeUri: html_to_pdf/
       Handler: app.lambda_handler
-      Runtime: python3.12
+      Runtime: python3.9
       Architectures:
         - x86_64
       Layers:
@@ -72,10 +55,7 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName:
-              Ref: DestinationS3Bucket
-        - S3CrudPolicy:
-            BucketName:
-              Ref: SourceS3Bucket
+              Ref: MyS3Bucket
       Environment:
         Variables:
           FONTCONFIG_PATH: /opt/fonts
@@ -88,3 +68,7 @@ Outputs:
     Description: "Hello World Lambda Function ARN"
     #Add the ARN of the lambda function
     Value: !GetAtt HtmlToPdfFunction.Arn
+#Add the name of the S3 bucket
+  MyS3BucketName:
+    Description: "S3 Bucket Name"
+    Value: !Ref MyS3Bucket

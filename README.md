@@ -1,13 +1,33 @@
 # html2pdf
 
-This project helps in converting html file to pdf file using serverless framework. It uses AWS Lambda and AWS SAM. It uses lambda layer provided by [wkhtmltopdf project](https://wkhtmltopdf.org/)
+This project simplifies the process of converting HTML files to PDF using the serverless framework. It leverages AWS Lambda and AWS Serverless Application Model (SAM) to build and deploy the solution.
 
-This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
+The project includes the following key components:
 
-- html_to_pdf - Code for the application's Lambda function.
-- template.yaml - A template that defines the application's AWS resources.
+1. **HTML to PDF Lambda Function**: The source code for the Lambda function that performs the HTML to PDF conversion is located in the `html_to_pdf` directory.
+2. **AWS SAM Template**: The `template.yaml` file defines the AWS resources required for the application, including the Lambda function and its associated components.
 
-The application uses several AWS resources, including Lambda functions. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+The application utilizes a lambda layer provided by the [wkhtmltopdf project](https://wkhtmltopdf.org/) to handle the HTML to PDF conversion. This allows the solution to benefit from the robust functionality and performance of the wkhtmltopdf library without the need to manage the dependencies within the Lambda function code.
+
+To test the application, you can provide an input event in the following JSON format:
+
+```json
+{
+    "bucket": "<Name of the bucket where the file is stored currently and will be stored after processing> [Required]",
+    "file_key": "<File key where the file is store in S3> [Required if `html_string` is not defined]",
+    "html_string": "<HTML string to convert to a PDF> [Required if `file_key` is not defined]",
+    "wkhtmltopdf_options": {
+        "orientation": "<`landscape` or `portrait`> [Optional: Default is `portrait`]",
+        "title": "<Title of the PDF> [Optional]",
+        "margin": "<Margin of the PDF (same format as css [<top> <right> <bottom> <left>] (all must be included)).> [Optional]"
+    }
+}
+```
+
+When the Lambda function is executed, it will retrieve the HTML file from an S3 bucket, convert it to a PDF, and store the resulting PDF file in the same S3 bucket.
+
+This serverless approach simplifies the deployment and management of the HTML to PDF conversion functionality, making it easier to integrate and scale as needed.
+
 
 ## Deploy the sample application
 
@@ -39,5 +59,5 @@ The first command will build the source of your application. The second command 
 To delete the sample application that you created, use the AWS CLI. Assuming you used your project name for the stack name, you can run the following:
 
 ```bash
-sam delete --stack-name "htmltopdf"
+sam delete --stack-name "html2pdf"
 ```
