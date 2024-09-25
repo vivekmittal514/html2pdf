@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'htmltopdf
+
+  Sample SAM Template for htmltopdf
+
+  '
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+Resources:
+  SourceS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+  DestinationS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+  wkhtmltopdfLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: wkhtmltopdf-lambda-layer
+      Description: wkhtmltopdf lambda layer
+      ContentUri: ../../layers/wkhtmltox-0.12.6-4.amazonlinux2_lambda.zip
+      CompatibleRuntimes:
+      - python3.9
+      - python3.10
+      - python3.11
+      - python3.12
+  HtmlToPdfFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HtmlToPdfFunction
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+      - x86_64
+      Layers:
+      - Ref: wkhtmltopdfLayer
+      Policies:
+      - S3CrudPolicy:
+          BucketName:
+            Ref: DestinationS3Bucket
+      - S3CrudPolicy:
+          BucketName:
+            Ref: SourceS3Bucket
+      Environment:
+        Variables:
+          FONTCONFIG_PATH: /opt/fonts
+    Metadata:
+      SamResourceId: HtmlToPdfFunction
+Outputs:
+  HtmlToPdfFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - HtmlToPdfFunction
+      - Arn

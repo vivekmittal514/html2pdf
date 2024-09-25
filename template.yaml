@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  htmltopdf
+
+  Sample SAM Template for htmltopdf
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+
+Resources:
+
+#Add Source S3 bucket
+  SourceS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+
+  #Add Destination S3 bucket
+  DestinationS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+#Create a lambda layer for wkhtmltopdf. The package is given as a zip format in layers folder in root directory.
+  wkhtmltopdfLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: wkhtmltopdf-lambda-layer
+      Description: wkhtmltopdf lambda layer
+      ContentUri: layers/wkhtmltox-0.12.6-4.amazonlinux2_lambda.zip
+      CompatibleRuntimes:
+        - python3.9
+        - python3.10
+        - python3.11
+        - python3.12
+
+  HtmlToPdfFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    Properties:
+      CodeUri: html_to_pdf/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Layers:
+        - !Ref wkhtmltopdfLayer
+      Policies:
+        - S3CrudPolicy:
+            BucketName:
+              Ref: DestinationS3Bucket
+        - S3CrudPolicy:
+            BucketName:
+              Ref: SourceS3Bucket
+      Environment:
+        Variables:
+          FONTCONFIG_PATH: /opt/fonts
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  HtmlToPdfFunction:
+    Description: "Hello World Lambda Function ARN"
+    #Add the ARN of the lambda function
+    Value: !GetAtt HtmlToPdfFunction.Arn
